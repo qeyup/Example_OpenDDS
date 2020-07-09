@@ -1,0 +1,14 @@
+#include "orbsvcs/TimeBase.idl"
+
+module DDS
+{
+#pragma DCPS_DATA_TYPE "DDS::msg"
+#pragma DCPS_DATA_KEY "DDS::msg receiver"
+  struct msg {
+    string sender;
+    string receiver;
+    string data;
+    long type;
+    TimeBase::TimeT timestamp;
+  };
+};
