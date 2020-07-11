@@ -3,6 +3,13 @@ cmake_minimum_required(VERSION 3.1)
 project(OpenDDS_Subscriber_Example)
 
 
+# Set debug by default
+if ("${CMAKE_BUILD_TYPE}" STREQUAL "")
+    set(CMAKE_BUILD_TYPE "Debug")
+endif()
+
+
+
 # Build data typesupport source
 set(IDL_FILE "src/msg.idl")
 set(IDL_OUT_DIR "idl")
@@ -15,6 +22,12 @@ execute_process(COMMAND tao_idl -o . -I$ENV{DDS_ROOT} -I/usr/include ${IDL_FILE_
 execute_process(COMMAND tao_idl -o . -I$ENV{DDS_ROOT} -I/usr/include ${IDL_FILE_NAME}TypeSupport.idl WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${IDL_OUT_DIR})
 file(GLOB_RECURSE GEN_SOURCE_FILES "${CMAKE_CURRENT_BINARY_DIR}/${IDL_OUT_DIR}/*.cpp")
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/${IDL_OUT_DIR}/)
+
+
+# Copy config into build folder
+if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/rtps.ini")
+   configure_file(config/rtps.ini ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+endif()
 
 
 # Gen exec
@@ -38,7 +51,7 @@ target_link_libraries(
 
     # TAO
     TAO_AnyTypeCode
-    TAO_PortableServer
+    #TAO_PortableServer
     TAO
 
     # ACE
@@ -50,4 +63,4 @@ target_link_libraries(
     m
     pthread
     rt
-)
+    )
