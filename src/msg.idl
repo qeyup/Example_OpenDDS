@@ -1,9 +1,9 @@
 #include "orbsvcs/TimeBase.idl"
 
-module DDS
+module DDSTopic
 {
-#pragma DCPS_DATA_TYPE "DDS::msg"
-#pragma DCPS_DATA_KEY "DDS::msg receiver"
+#pragma DCPS_DATA_TYPE "DDSTopic::msg"
+#pragma DCPS_DATA_KEY "DDSTopic::msg receiver"
   struct msg {
     string sender;
     string receiver;
