@@ -30,11 +30,47 @@ if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/rtps.ini")
 endif()
 
 
-# Gen exec
+# Publisher exe
+add_executable(
+    Publisher 
+    ${GEN_SOURCE_FILES}
+    "src/Publisher.cpp"
+)
+
+
+# link dds
+target_link_libraries(
+    Publisher
+
+    # OpenDDS
+    OpenDDS_Rtps
+    OpenDDS_Rtps_Udp
+    OpenDDS_Dcps
+    OpenDDS_Tcp
+    OpenDDS_InfoRepoDiscovery
+
+    # TAO
+    TAO_AnyTypeCode
+    #TAO_PortableServer
+    TAO
+
+    # ACE
+    ACE
+
+    # Others
+    dl
+    nsl
+    m
+    pthread
+    rt
+)
+
+
+# Publisher exe
 add_executable(
     Subscriber 
     ${GEN_SOURCE_FILES}
-    "src/main.cpp"
+    "src/Subscriber.cpp"
 )
 
 
@@ -63,4 +99,4 @@ target_link_libraries(
     m
     pthread
     rt
-    )
+)

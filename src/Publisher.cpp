@@ -1,0 +1,144 @@
+#include <thread>
+#include <chrono>
+#include <iostream>
+
+
+//> IDL gen code
+//#include "msgC.h"
+//#include "msgS.h"
+//#include "msgTypeSupportS.h"
+//#include "msgTypeSupportC.h"
+#include "msgTypeSupportImpl.h"
+
+
+//> DDS headers
+//#include "dds/DdsDcpsPublicationC.h"
+//#include "dds/DdsDcpsSubscriptionC.h"
+//#include "dds/DdsDcpsDomainC.h"
+//#include "dds/DCPS/Service_Participant.h"
+//#include "dds/DCPS/Marked_Default_Qos.h"
+//#include "dds/DCPS/PublisherImpl.h"
+//#include "ace/streams.h"
+//#include "orbsvcs/Time_Utilities.h"
+
+
+//> Transport and discovery static linking
+#include <dds/DCPS/transport/rtps_udp/RtpsUdp.h>
+#include <dds/DCPS/RTPS/RtpsDiscovery.h>
+
+
+#define DDS_DOMAIN  1000
+
+
+
+int main(int argc, char *argv[])
+{
+    std::cout << "Running publisher..." << std::endl;
+
+
+    //> Initialize and create a DomainParticipant
+    DDS::DomainParticipant_var participant;
+    {
+        char config_arg[] = "-DCPSConfigFile";
+        char config_file[] = "rtps.ini";
+        char * config[] = {config_arg, config_file};
+        int config_args = 2;
+        DDS::DomainParticipantFactory_var dpf = TheParticipantFactoryWithArgs(config_args, config);
+        participant = dpf->create_participant(DDS_DOMAIN, PARTICIPANT_QOS_DEFAULT, DDS::DomainParticipantListener::_nil(), OpenDDS::DCPS::DEFAULT_STATUS_MASK);
+        if (CORBA::is_nil(participant.in()))
+        {
+            std::cerr << "create_participant failed." << std::endl;
+            ACE_OS::exit(1);
+        }
+    }
+
+
+    //> Create publisher
+    DDS::Publisher_var pub;
+    {
+        pub = participant->create_publisher(PUBLISHER_QOS_DEFAULT, DDS::PublisherListener::_nil(), OpenDDS::DCPS::DEFAULT_STATUS_MASK);
+        if (CORBA::is_nil(pub.in()))
+        {
+            std::cerr << "create_subscriber failed." << std::endl;
+            ACE_OS::exit(1);
+        }
+    }
+
+
+    //> Register type of the created idl
+    const char * topic_name = "Message";
+    const char * topic_type = "Message_t";
+    {
+        DDSTopic::msgTypeSupport_var msg_servant = new DDSTopic::msgTypeSupportImpl();
+        if (DDS::RETCODE_OK != msg_servant->register_type(participant.in(), topic_type))
+        {
+            std::cerr << "register_type for " << topic_type << " failed." << std::endl;
+            ACE_OS::exit(1);
+        }
+    }
+
+
+    //> Create Topic
+    DDS::Topic_var topic;
+    {
+        topic = participant->create_topic(topic_name, topic_type, TOPIC_QOS_DEFAULT, DDS::TopicListener::_nil(), OpenDDS::DCPS::DEFAULT_STATUS_MASK);
+        if (CORBA::is_nil(topic.in()))
+        {
+            std::cerr << "create_topic for " << topic_type << " failed." << std::endl;
+            ACE_OS::exit(1);
+        }
+    }
+
+
+    //> Create a DataWriter for the topic_type
+    DDSTopic::msgDataWriter_var datawriter;
+    {
+        DDS::DataWriter_var message_base_dw = pub->create_datawriter(topic.in(), DATAWRITER_QOS_DEFAULT, DDS::DataWriterListener::_nil(), OpenDDS::DCPS::DEFAULT_STATUS_MASK);
+        if (CORBA::is_nil(message_base_dw.in()))
+        {
+            std::cerr << "create_datawriter for " << topic_name << " failed." << std::endl;
+            ACE_OS::exit(1);
+        }
+        datawriter = DDSTopic::msgDataWriter::_narrow(message_base_dw.in());
+        if (CORBA::is_nil(datawriter.in()))
+        {
+            std::cerr << "msgDataWriter could not " << "be narrowed" << std::endl;
+            ACE_OS::exit(1);
+        }
+    }
+
+
+    //> Loop
+    int counter = 0;
+    while (true)
+    {
+        DDSTopic::msg msg;
+        msg.sender = "sender";
+        msg.receiver = "receiver";
+        msg.data = std::to_string(counter++).c_str();
+        msg.type = 1;
+        msg.timestamp = std::time(0);
+        auto exchange_handle = datawriter->register_instance(msg);
+        DDS::ReturnCode_t ret = datawriter->write(msg, exchange_handle);
+        if (ret != DDS::RETCODE_OK)
+        {
+            std::cerr << "Send error (" << ret << ")" << std::endl;
+        }
+        else
+        {
+            //> Print
+            std::cout << "[Sent] Sender: " <<  msg.sender << "  receiver: " <<  msg.receiver << "  data: "
+                <<  msg.data << "  type: " <<  msg.type << "  timestamp: " <<  msg.timestamp << std::endl;
+        }
+
+
+        //> Wait
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+
+
+
+
+    std::cout << "Done!" << std::endl;
+    return 0;
+}
