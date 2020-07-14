@@ -12,15 +12,3 @@
 ```bash
 cd ./docker/host-compiler && sudo ./DockerBuild.sh
 ```
-
-# Run subcriber
-
-```bash
-./Subscriber -DCPSConfigFile /root/workspace/config/rtps.ini
-```
-
-# Run publisher
-
-```bash
-./Publisher -DCPSConfigFile /root/workspace/config/rtps.ini
-```
