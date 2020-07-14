@@ -94,11 +94,12 @@ int main(int argc, char *argv[])
 
     //> Loop
     int counter = 0;
+    srand (time(NULL));
+    std::string sender = std::string("sender_") + std::to_string(rand() % 1000);
     while (true)
     {
         DDSTopic::msg msg;
-        msg.sender = "sender";
-        msg.receiver = "receiver";
+        msg.sender = sender.c_str();
         msg.data = std::to_string(counter++).c_str();
         msg.type = 1;
         auto exchange_handle = datawriter->register_instance(msg);
@@ -106,8 +107,7 @@ int main(int argc, char *argv[])
         if (ret == DDS::RETCODE_OK)
         {
             //> Print
-            std::cout << "[Sent] Sender: " <<  msg.sender << "  receiver: " <<  msg.receiver << "  data: "
-                <<  msg.data << "  type: " <<  msg.type << std::endl;
+            std::cout << "[Sent] Sender: " <<  msg.sender << "  data: " <<  msg.data << "  type: " <<  msg.type << std::endl;
         }
         else
         {
@@ -116,7 +116,6 @@ int main(int argc, char *argv[])
 
 
         //> Wait random time between 2000-50 ms
-        srand (time(NULL));
         std::this_thread::sleep_for(std::chrono::milliseconds(rand() % 1950 + 50));
     }
 

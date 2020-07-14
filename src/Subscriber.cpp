@@ -73,8 +73,8 @@ public:
             if (status == DDS::RETCODE_OK)
             {
                 //> Print
-                std::cout << "[Recived]  Sender: " <<  msg.sender << "  receiver: " <<  msg.receiver << "  data: "
-                    <<  msg.data << "  type: " <<  msg.type << "  timestamp: " <<  si.source_timestamp.sec << std::endl;
+                std::cout << "[Recived]  Sender: " <<  msg.sender << "  data: " <<  msg.data << "  type: "
+                    <<  msg.type << "  timestamp: " <<  si.source_timestamp.sec << std::endl;
             }
             else if (status == DDS::RETCODE_NO_DATA)
             {

@@ -3,10 +3,10 @@
 module DDSTopic
 {
 #pragma DCPS_DATA_TYPE "DDSTopic::msg"
-#pragma DCPS_DATA_KEY "DDSTopic::msg receiver"
-  struct msg {
+#pragma DCPS_DATA_KEY "DDSTopic::msg sender"
+  struct msg
+  {
     string sender;
-    string receiver;
     string data;
     long type;
   };
