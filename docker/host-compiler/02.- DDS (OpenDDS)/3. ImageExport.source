@@ -1,0 +1,4 @@
+export ACE_ROOT=$OPENDDS_PATH/share/ace
+export TAO_ROOT=$OPENDDS_PATH/share/tao
+export DDS_ROOT=$OPENDDS_PATH/share/dds
+export MPC_ROOT=$TAO_ROOT/MPC

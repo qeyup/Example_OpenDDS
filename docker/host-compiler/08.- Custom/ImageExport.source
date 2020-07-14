@@ -1,0 +1,3 @@
+
+# Set make verbose by default
+#export VERBOSE=1
