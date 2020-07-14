@@ -9,6 +9,6 @@ module DDSTopic
     string receiver;
     string data;
     long type;
-    TimeBase::TimeT timestamp;
   };
+  const string msgTypeName = "Message_t";
 };

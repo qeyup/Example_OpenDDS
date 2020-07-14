@@ -4,32 +4,15 @@
 
 
 //> IDL gen code
-//#include "msgC.h"
-//#include "msgS.h"
-//#include "msgTypeSupportS.h"
-
-//#include "msgTypeSupportC.h"
 #include "msgTypeSupportImpl.h"
-
-
-//> DDS headers
-//#include "dds/DdsDcpsPublicationC.h"
-//#include "dds/DdsDcpsSubscriptionC.h"
-//#include "dds/DdsDcpsDomainC.h"
-//#include <dds/DdsDcpsSubscriptionC.h>
-//#include "dds/DCPS/Service_Participant.h"
-//#include "dds/DCPS/Marked_Default_Qos.h"
-//#include "dds/DCPS/PublisherImpl.h"
-//#include "ace/streams.h"
-//#include "orbsvcs/Time_Utilities.h"
-
 
 //> Transport and discovery static linking
 #include <dds/DCPS/transport/rtps_udp/RtpsUdp.h>
 #include <dds/DCPS/RTPS/RtpsDiscovery.h>
 
 
-#define DDS_DOMAIN  1000
+#define EXAMPLE_DOMAIN 1000
+#define EXAMPLE_TOPIC_NAME "Message"
 
 
 class MessageDataReaderListenerImpl : public OpenDDS::DCPS::LocalObject<DDS::DataReaderListener>
@@ -65,6 +48,11 @@ public:
         std::cerr << "ExchangeEventDataReaderListenerImpl::on_sample_rejected" << std::endl;
     }
 
+    void on_sample_lost(DDS::DataReader_ptr reader, const DDS::SampleLostStatus& status) override
+    {
+        std::cerr << "ExchangeEventDataReaderListenerImpl::on_sample_lost" << std::endl;
+    }
+
     void on_data_available(DDS::DataReader_ptr reader) override
     {
         DDSTopic::msgDataReader_var message_dr = DDSTopic::msgDataReader::_narrow(reader);
@@ -74,7 +62,8 @@ public:
             ACE_OS::exit(1);
         }
 
-        int count = 0;
+
+        //> Get all received data
         while (true)
         {
             DDSTopic::msg msg;
@@ -85,26 +74,19 @@ public:
             {
                 //> Print
                 std::cout << "[Recived]  Sender: " <<  msg.sender << "  receiver: " <<  msg.receiver << "  data: "
-                    <<  msg.data << "  type: " <<  msg.type << "  timestamp: " <<  msg.timestamp << std::endl;
-
-                ++count;
-                break;
+                    <<  msg.data << "  type: " <<  msg.type << "  timestamp: " <<  si.source_timestamp.sec << std::endl;
             }
             else if (status == DDS::RETCODE_NO_DATA)
             {
-                std::cerr << "INFO: reading complete after " << count << " samples." << std::endl;
+                //> No more data available
                 break;
             }
             else
             {
+                // Error
                 std::cerr << "ERROR: read ExchangeEvent: Error: " << status << std::endl;
             }
         }
-    }
-
-    void on_sample_lost(DDS::DataReader_ptr reader, const DDS::SampleLostStatus& status) override
-    {
-        std::cerr << "ExchangeEventDataReaderListenerImpl::on_sample_lost" << std::endl;
     }
 };
 
@@ -122,7 +104,7 @@ int main(int argc, char *argv[])
         char * config[] = {config_arg, config_file};
         int config_args = 2;
         DDS::DomainParticipantFactory_var dpf = TheParticipantFactoryWithArgs(config_args, config);
-        participant = dpf->create_participant(DDS_DOMAIN, PARTICIPANT_QOS_DEFAULT, DDS::DomainParticipantListener::_nil(), OpenDDS::DCPS::DEFAULT_STATUS_MASK);
+        participant = dpf->create_participant(EXAMPLE_DOMAIN, PARTICIPANT_QOS_DEFAULT, DDS::DomainParticipantListener::_nil(), OpenDDS::DCPS::DEFAULT_STATUS_MASK);
         if (CORBA::is_nil(participant.in()))
         {
             std::cerr << "create_participant failed." << std::endl;
@@ -143,15 +125,12 @@ int main(int argc, char *argv[])
     }
 
 
-
-    //> Register type of the created idl
-    const char * topic_name = "Message";
-    const char * topic_type = "Message_t";
+    //> Register topic type of the created idl
     {
         DDSTopic::msgTypeSupport_var msg_servant = new DDSTopic::msgTypeSupportImpl();
-        if (DDS::RETCODE_OK != msg_servant->register_type(participant.in(), topic_type))
+        if (DDS::RETCODE_OK != msg_servant->register_type(participant.in(), DDSTopic::msgTypeName))
         {
-            std::cerr << "register_type for " << topic_type << " failed." << std::endl;
+            std::cerr << "register_type for " << DDSTopic::msgTypeName << " failed." << std::endl;
             ACE_OS::exit(1);
         }
     }
@@ -160,17 +139,16 @@ int main(int argc, char *argv[])
     //> Create Topic
     DDS::Topic_var topic;
     {
-        topic = participant->create_topic(topic_name, topic_type, TOPIC_QOS_DEFAULT, DDS::TopicListener::_nil(), OpenDDS::DCPS::DEFAULT_STATUS_MASK);
+        topic = participant->create_topic(EXAMPLE_TOPIC_NAME, DDSTopic::msgTypeName, TOPIC_QOS_DEFAULT, DDS::TopicListener::_nil(), OpenDDS::DCPS::DEFAULT_STATUS_MASK);
         if (CORBA::is_nil(topic.in()))
         {
-            std::cerr << "create_topic for " << topic_type << " failed." << std::endl;
+            std::cerr << "create_topic for " << DDSTopic::msgTypeName << " failed." << std::endl;
             ACE_OS::exit(1);
         }
     }
 
 
-
-    //> Create a DataReader for the topic_type
+    //> Create a DataReader for the DDSTopic::msgTypeName
     DDS::DataReader_var datareader;
     MessageDataReaderListenerImpl message_in_port;
     {
@@ -189,16 +167,8 @@ int main(int argc, char *argv[])
     }
 
 
-
-    //> Wait for events from the Publisher; shut down when "close" received
-    while (true)
-    {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-    }
-
-
-
-
+    //> Wait for events from the Publisher
+    ACE_Thread_Manager::instance()->wait();
 
 
     std::cout << "Done!" << std::endl;
